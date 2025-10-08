@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X Video Downloader</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .container { background: #fff; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 600px; text-align: center; }
+        h1 { font-size: 2rem; margin-bottom: 1.5rem; color: #1877f2; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 1.5rem; }
+        input { flex-grow: 1; padding: 12px; border: 1px solid #dddfe2; border-radius: 6px; font-size: 1rem; }
+        button { padding: 12px 20px; font-size: 1rem; font-weight: bold; color: #fff; background-color: #1877f2; border: none; border-radius: 6px; cursor: pointer; }
+        button:disabled { background-color: #9cb4d8; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #1877f2; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 2rem auto; display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #results { margin-top: 2rem; text-align: left; }
+        .result-item { margin-bottom: 1.5rem; }
+        .thumbnail { width: 100%; max-width: 300px; border-radius: 8px; margin: 0 auto 1rem; display: block; }
+        .download-links a { display: block; background-color: #e7f3ff; color: #1877f2; text-decoration: none; padding: 12px; margin-top: 8px; border-radius: 6px; text-align: center; }
+        #error { color: #fa383e; margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>X (Twitter) Downloader</h1>
+        <div class="input-group">
+            <input type="text" id="tweetUrl" placeholder="https://x.com/user/status/123...">
+            <button id="downloadBtn">Unduh</button>
+        </div>
+        <div class="loader" id="loader"></div>
+        <div id="error"></div>
+        <div id="results"></div>
+    </div>
+    <script>
+        const downloadBtn = document.getElementById('downloadBtn');
+        const urlInput = document.getElementById('tweetUrl');
+        const resultsDiv = document.getElementById('results');
+        const loader = document.getElementById('loader');
+        const errorDiv = document.getElementById('error');
+        
+        // PENTING: URL API sekarang menjadi relatif, bukan localhost
+        const BACKEND_API_URL = '/api';
+
+        downloadBtn.addEventListener('click', async () => {
+            const tweetUrl = urlInput.value.trim();
+            if (!tweetUrl) { return; }
+
+            resultsDiv.innerHTML = '';
+            errorDiv.innerText = '';
+            loader.style.display = 'block';
+            downloadBtn.disabled = true;
+
+            try {
+                const response = await fetch(BACKEND_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: tweetUrl }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Terjadi kesalahan');
+                }
+                const data = await response.json();
+                displayResults(data);
+            } catch (err) {
+                errorDiv.innerText = `Error: ${err.message}`;
+            } finally {
+                loader.style.display = 'none';
+                downloadBtn.disabled = false;
+            }
+        });
+
+        function displayResults(data) {
+            // ... (Fungsi displayResults sama persis seperti jawaban sebelumnya) ...
+            if (!data.videos || data.videos.length === 0) {
+                errorDiv.innerText = 'Tidak ada video yang ditemukan di URL ini.';
+                return;
+            }
+            let html = '<div class="result-item">';
+            if (data.thumbnail) { html += `<img src="${data.thumbnail}" alt="Thumbnail" class="thumbnail">`; }
+            html += '<h3>Link Unduhan:</h3><div class="download-links">';
+            if (data.mp3 && data.mp3.url) { html += `<a href="${data.mp3.url}" target="_blank" download>Unduh MP3 (${data.mp3.quality})</a>`; }
+            data.videos.forEach(video => { html += `<a href="${video.url}" target="_blank" download>${video.label}</a>`; });
+            html += '</div></div>';
+            resultsDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
