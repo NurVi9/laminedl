@@ -54,7 +54,7 @@ app.post("/api", async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Gagal memproses permintaan." });
+    res.status(500).json({ error: error.message });
   }
 });
 
